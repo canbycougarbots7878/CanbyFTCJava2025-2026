@@ -31,16 +31,19 @@ public class PRM_Drive extends LinearOpMode {
 
         waitForStart();
         while(opModeIsActive()) {
+            // Get local directions
             double localForward = gamepad1.left_stick_y;
             double localRight = - gamepad1.left_stick_x;
 
+            // Read IMU data
             YawPitchRollAngles angles = imu.getRobotYawPitchRollAngles();
             double yaw = angles.getYaw() * 0.01745329251; // Get robot yaw converted to radians
 
+            // Calculate global directions using 2D rotation matrix
             double forward = localForward * Math.cos(yaw) - localRight * Math.sin(yaw);
             double right = localForward * Math.sin(yaw) + localRight * Math.cos(yaw);
 
-            Wheels.Omni_Move(forward, right, gamepad1.right_stick_x, 0.5);
+            Wheels.Omni_Move(forward, right, gamepad1.right_stick_x, (gamepad1.right_bumper ? 1.0 : 0.5));
 
             if(gamepad1.start) imu.resetYaw();
         }
