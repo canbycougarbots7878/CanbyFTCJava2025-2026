@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 public class MovementLib {
     public static class DriveWheels {
@@ -24,10 +25,10 @@ public class MovementLib {
         }
 
         public void Omni_Move(double Forward, double Right, double RotateCC, double speed) {
-            double fl = Forward + Right - RotateCC;
-            double fr = -Forward - Right + RotateCC;
-            double bl = Forward - Right - RotateCC;
-            double br = -Forward + Right + RotateCC;
+            double fl = Forward + RotateCC + Right;
+            double fr = Forward - RotateCC - Right;
+            double bl = Forward + RotateCC - Right;
+            double br = Forward - RotateCC + Right;
 
             double max = Math.max(1.0, Math.max(Math.abs(fl),
                     Math.max(Math.abs(fr), Math.max(Math.abs(br), Math.abs(bl)))));
@@ -38,6 +39,27 @@ public class MovementLib {
             bl /= max;
 
             this.Set_Wheels(fr * speed, fl * speed, br * speed, bl * speed);
+        }
+
+        public void Reverse_These(boolean frontright, boolean frontleft, boolean backright, boolean backleft) {
+            if(frontright) {
+                this.Front_Right.setDirection(this.Front_Right.getDirection().inverted());
+            }
+            if(frontleft) {
+                this.Front_Left.setDirection(this.Front_Left.getDirection().inverted());
+            }
+            if(backright) {
+                this.Back_Right.setDirection(this.Back_Right.getDirection().inverted());
+            }
+            if(backleft) {
+                this.Back_Left.setDirection(this.Back_Left.getDirection().inverted());
+            }
+        }
+        public void Reverse_Left() {
+            this.Reverse_These(false,true,false,true);
+        }
+        public void Reverse_Right() {
+            this.Reverse_These(true,false,true,false);
         }
 
         public void Stop_Wheels() {
