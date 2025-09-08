@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
-import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.hardwareMap;
+import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -12,21 +12,17 @@ public class MovementLib {
         public DcMotor Back_Right;
         public DcMotor Back_Left;
 
-        public DriveWheels() {
-
+        public DriveWheels(HardwareMap hardwareMap) {
+            this.Front_Right = hardwareMap.get(DcMotor.class, "frontright");
+            this.Front_Left = hardwareMap.get(DcMotor.class, "frontleft");
+            this.Back_Right = hardwareMap.get(DcMotor.class, "backright");
+            this.Back_Left = hardwareMap.get(DcMotor.class, "backleft");
         }
         public DriveWheels(DcMotor Front_Right, DcMotor Front_Left, DcMotor Back_Right, DcMotor Back_Left) {
             this.Front_Right = Front_Right;
             this.Front_Left = Front_Left;
             this.Back_Right = Back_Right;
             this.Back_Left = Back_Left;
-        }
-
-        public void Auto_Setup() {
-            this.Front_Right = hardwareMap.get(DcMotor.class, "frontright");
-            this.Front_Left = hardwareMap.get(DcMotor.class, "frontleft");
-            this.Back_Right = hardwareMap.get(DcMotor.class, "backright");
-            this.Back_Left = hardwareMap.get(DcMotor.class, "backleft");
         }
 
         public void Set_Wheels(double Front_Right_Power, double Front_Left_Power, double Back_Right_Power, double Back_Left_Power) {
