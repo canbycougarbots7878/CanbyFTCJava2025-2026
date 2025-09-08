@@ -47,7 +47,7 @@ public class MovementLib {
             bl /= max;
 
             this.Set_Wheels(fr * speed, fl * speed, br * speed, bl * speed);
-        }
+        } public void Omni_Move(double Forward, double Right, double RotateCC) { Omni_Move(Forward, Right, RotateCC, 1.0); /* If no speed provided, assume full speed (1.0) */ }
 
         public void Reverse_These(boolean frontright, boolean frontleft, boolean backright, boolean backleft) {
             if(frontright) {
