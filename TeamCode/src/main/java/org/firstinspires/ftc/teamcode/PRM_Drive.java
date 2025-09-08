@@ -9,7 +9,7 @@ import java.lang.Math;
 
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
-@TeleOp(name = "Player Relative Drive", group = "Concept")
+@TeleOp(name = "Player Relative Drive", group = "Movement")
 public class PRM_Drive extends LinearOpMode {
     DcMotor Front_Right = null;
     DcMotor Front_Left = null;
