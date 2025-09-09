@@ -52,6 +52,25 @@ public class AprilTagMovement extends LinearOpMode {
             if (!detections.isEmpty()) {
                 AprilTagDetection tag = detections.get(0);
 
+
+                if (tag.ftcPose != null) {
+                    SparkFunOTOS.Pose2D pos = myOtos.getPosition();
+                    double angleRad = Math.toRadians(pos.h);
+                    double rotatedX = tag.ftcPose.z * Math.cos(angleRad) - tag.ftcPose.x * Math.sin(angleRad);
+                    double rotatedY = tag.ftcPose.z * Math.sin(angleRad) + tag.ftcPose.x * Math.cos(angleRad);
+
+                    targetX = pos.x + rotatedX;
+                    targetY = pos.y + rotatedY;
+
+                    telemetry.addData("Target set from tag %d", tag.id);
+                    telemetry.addData("Target Field Pos", "X=%.2f, Y=%.2f", targetX, targetY);
+                    telemetry.update();
+                    targetSet = true;
+                } else {
+                    telemetry.addData("Tag %d detected, but pose is null", tag.id);
+                    telemetry.update();
+                }
+
                 // Current OTOS pose
                 SparkFunOTOS.Pose2D pos = myOtos.getPosition();
 
