@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.hardware.sparkfun.SparkFunOTOS;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -11,12 +12,24 @@ public class MovementLib {
         public DcMotor Front_Left;
         public DcMotor Back_Right;
         public DcMotor Back_Left;
+        public SparkFunOTOS otos;
+
+        private Boolean OTOS_ENABLED = false;
 
         public DriveWheels(HardwareMap hardwareMap) {
             this.Front_Right = hardwareMap.get(DcMotor.class, "frontright");
             this.Front_Left = hardwareMap.get(DcMotor.class, "frontleft");
             this.Back_Right = hardwareMap.get(DcMotor.class, "backright");
             this.Back_Left = hardwareMap.get(DcMotor.class, "backleft");
+        }
+        public DriveWheels(HardwareMap hardwareMap, SparkFunOTOS myOtos) {
+            this.Front_Right = hardwareMap.get(DcMotor.class, "frontright");
+            this.Front_Left = hardwareMap.get(DcMotor.class, "frontleft");
+            this.Back_Right = hardwareMap.get(DcMotor.class, "backright");
+            this.Back_Left = hardwareMap.get(DcMotor.class, "backleft");
+            this.otos = myOtos;
+
+            this.OTOS_ENABLED = true;
         }
         public DriveWheels(DcMotor Front_Right, DcMotor Front_Left, DcMotor Back_Right, DcMotor Back_Left) {
             this.Front_Right = Front_Right;
@@ -72,6 +85,15 @@ public class MovementLib {
 
         public void Stop_Wheels() {
             this.Set_Wheels(0, 0, 0, 0);
+        }
+
+        public void Omni_Move_To_Target(SparkFunOTOS.Pose2D target) {
+            if(!OTOS_ENABLED) return;
+            SparkFunOTOS.Pose2D pose = otos.getPosition();
+            double dx = 2 * (target.x - pose.x);
+            double dy = 2 * (target.y - pose.y);
+            double dh = (target.h - pose.h) / 180.0;
+            Omni_Move(dx, dy, dh);
         }
     }
 
