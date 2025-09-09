@@ -49,53 +49,43 @@ public class AprilTagMovement extends LinearOpMode {
 
         while (opModeIsActive() && !targetSet) {
             List<AprilTagDetection> detections = aprilTag.getDetections();
+
             if (!detections.isEmpty()) {
-                AprilTagDetection tag = detections.get(0);
+                // Loop through all detected tags to find one with a valid pose
+                for (AprilTagDetection tag : detections) {
+                    if (tag.ftcPose != null) {
+                        // Get current robot pose from OTOS
+                        SparkFunOTOS.Pose2D pos = myOtos.getPosition();
+                        double angleRad = Math.toRadians(pos.h);
 
+                        // Transform tag pose to field coordinates
+                        double rotatedX = tag.ftcPose.z * Math.cos(angleRad) - tag.ftcPose.x * Math.sin(angleRad);
+                        double rotatedY = tag.ftcPose.z * Math.sin(angleRad) + tag.ftcPose.x * Math.cos(angleRad);
 
-                if (tag.ftcPose != null) {
-                    SparkFunOTOS.Pose2D pos = myOtos.getPosition();
-                    double angleRad = Math.toRadians(pos.h);
-                    double rotatedX = tag.ftcPose.z * Math.cos(angleRad) - tag.ftcPose.x * Math.sin(angleRad);
-                    double rotatedY = tag.ftcPose.z * Math.sin(angleRad) + tag.ftcPose.x * Math.cos(angleRad);
+                        targetX = pos.x + rotatedX;
+                        targetY = pos.y + rotatedY;
 
-                    targetX = pos.x + rotatedX;
-                    targetY = pos.y + rotatedY;
+                        telemetry.addData("Target set from tag %d", tag.id);
+                        telemetry.addData("Target Field Pos", "X=%.2f, Y=%.2f", targetX, targetY);
+                        telemetry.update();
 
-                    telemetry.addData("Target set from tag %d", tag.id);
-                    telemetry.addData("Target Field Pos", "X=%.2f, Y=%.2f", targetX, targetY);
-                    telemetry.update();
-                    targetSet = true;
-                } else {
-                    telemetry.addData("Tag %d detected, but pose is null", tag.id);
-                    telemetry.update();
+                        targetSet = true; // we have a valid target
+                        break; // exit for loop once a valid pose is found
+                    } else {
+                        telemetry.addData("Tag %d detected but pose is null", tag.id);
+                        telemetry.update();
+                    }
                 }
-
-                // Current OTOS pose
-                SparkFunOTOS.Pose2D pos = myOtos.getPosition();
-
-                // Convert AprilTag relative offset into field coordinates
-                double angleRad = Math.toRadians(pos.h);
-                double rotatedX = tag.ftcPose.z * Math.cos(angleRad) - tag.ftcPose.x * Math.sin(angleRad);
-                double rotatedY = tag.ftcPose.z * Math.sin(angleRad) + tag.ftcPose.x * Math.cos(angleRad);
-
-                targetX = pos.x + rotatedX;
-                targetY = pos.y + rotatedY;
-
-                telemetry.addData("Target set from tag %d", tag.id);
-                telemetry.addData("Target Field Pos", "X=%.2f, Y=%.2f", targetX, targetY);
-                telemetry.update();
-
-                targetSet = true;
             } else {
                 telemetry.addLine("Looking for AprilTag...");
                 telemetry.update();
             }
         }
 
-        // --- Step 2: Drive to the target using OTOS ---
-        double kP = 0.6;   // proportional gain (tune this)
-        double tolerance = 0.15; // stop within 15 cm
+// --- Step 2: Drive to the target using OTOS ---
+        double kP = 0.6;        // proportional gain
+        double tolerance = 0.15; // meters
+        double maxSpeed = 0.4;
 
         while (opModeIsActive()) {
             SparkFunOTOS.Pose2D pos = myOtos.getPosition();
@@ -103,19 +93,18 @@ public class AprilTagMovement extends LinearOpMode {
             double errorX = targetX - pos.x;
             double errorY = targetY - pos.y;
 
+            double distance = Math.hypot(errorX, errorY);
+
             telemetry.addData("Current Pos", "X=%.2f, Y=%.2f", pos.x, pos.y);
             telemetry.addData("Target Pos", "X=%.2f, Y=%.2f", targetX, targetY);
-            telemetry.addData("Errors", "dX=%.2f, dY=%.2f", errorX, errorY);
+            telemetry.addData("Errors", "dX=%.2f, dY=%.2f, Dist=%.2f", errorX, errorY, distance);
 
-            double forward = errorX * kP; // forward error = difference in X (OTOS forward axis)
-            double right   = errorY * kP; // strafe error = difference in Y
-            double rotate  = 0;           // could add heading correction later
+            if (distance > tolerance) {
+                // proportional speeds
+                double forward = Math.max(-maxSpeed, Math.min(maxSpeed, errorX * kP));
+                double right   = Math.max(-maxSpeed, Math.min(maxSpeed, errorY * kP));
+                double rotate  = 0; // optional: add heading correction here
 
-            // Clamp speeds
-            forward = Math.max(-0.4, Math.min(0.4, forward));
-            right   = Math.max(-0.4, Math.min(0.4, right));
-
-            if (Math.abs(errorX) > tolerance || Math.abs(errorY) > tolerance) {
                 wheels.Omni_Move(forward, right, rotate, 1.0);
             } else {
                 wheels.Stop_Wheels();
