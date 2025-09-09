@@ -33,7 +33,7 @@ public class AprilTagMovement extends LinearOpMode {
         myOtos.setPosition(new SparkFunOTOS.Pose2D(0, 0, 0));
 
         // --- Setup AprilTag detection ---
-        aprilTag = new AprilTagProcessor.Builder().build();
+        aprilTag = new AprilTagProcessor.Builder().setTagSize(0.065).build();
         visionPortal = new VisionPortal.Builder()
                 .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
                 .addProcessor(aprilTag)
