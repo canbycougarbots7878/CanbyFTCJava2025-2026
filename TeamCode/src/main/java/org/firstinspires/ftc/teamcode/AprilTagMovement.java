@@ -9,6 +9,8 @@ import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.vision.apriltag.AprilTagLibrary;
 
 import java.util.List;
 
@@ -32,8 +34,18 @@ public class AprilTagMovement extends LinearOpMode {
         myOtos.resetTracking();
         myOtos.setPosition(new SparkFunOTOS.Pose2D(0, 0, 0));
 
-        // --- Setup AprilTag detection ---
-        aprilTag = new AprilTagProcessor.Builder().build();
+        // Build a custom tag library (example tags 1 and 2, adjust IDs & sizes as needed)
+        AprilTagLibrary tagLib = new AprilTagLibrary.Builder()
+                .addTag(1, "Tag1", 16.5, DistanceUnit.CM)  // Tag ID 1, size 16.5 cm
+                .addTag(2, "Tag2", 16.5, DistanceUnit.CM)  // Tag ID 2, size 16.5 cm
+                // add more tags as needed
+                .build();
+
+        // Initialize AprilTag processor using your library
+        aprilTag = new AprilTagProcessor.Builder()
+                .setTagLibrary(tagLib)
+                .build();
+
         visionPortal = new VisionPortal.Builder()
                 .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
                 .addProcessor(aprilTag)
