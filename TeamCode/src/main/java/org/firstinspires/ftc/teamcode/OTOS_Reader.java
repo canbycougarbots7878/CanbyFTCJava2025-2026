@@ -12,7 +12,6 @@ public class OTOS_Reader extends LinearOpMode {
     SparkFunOTOS myOtos;
     MovementLib.DriveWheels wheels;
     public void runOpMode() {
-        wheels.Auto_Setup();
 
         myOtos = hardwareMap.get(SparkFunOTOS.class, "sensor_otos");
         myOtos.setLinearUnit(DistanceUnit.METER);

@@ -33,21 +33,26 @@ public class MovementLib {
         }
 
         public void Omni_Move(double Forward, double Right, double RotateCC, double speed) {
-            double fl = Forward + RotateCC + Right;
-            double fr = Forward - RotateCC - Right;
-            double bl = Forward + RotateCC - Right;
-            double br = Forward - RotateCC + Right;
+            double fl = Forward + Right + RotateCC;
+            double fr = Forward - Right - RotateCC;
+            double bl = Forward - Right + RotateCC;
+            double br = Forward + Right - RotateCC;
 
+            // normalize so no value exceeds 1
             double max = Math.max(1.0, Math.max(Math.abs(fl),
-                    Math.max(Math.abs(fr), Math.max(Math.abs(br), Math.abs(bl)))));
+                    Math.max(Math.abs(fr), Math.max(Math.abs(bl), Math.abs(br)))));
 
             fl /= max;
             fr /= max;
-            br /= max;
             bl /= max;
+            br /= max;
 
             this.Set_Wheels(fr * speed, fl * speed, br * speed, bl * speed);
-        } public void Omni_Move(double Forward, double Right, double RotateCC) { Omni_Move(Forward, Right, RotateCC, 1.0); /* If no speed provided, assume full speed (1.0) */ }
+        }
+
+        public void Omni_Move(double Forward, double Right, double RotateCC) {
+            Omni_Move(Forward, Right, RotateCC, 1.0); /* If no speed provided, assume full speed (1.0) */
+        }
 
         public void Reverse_These(boolean frontright, boolean frontleft, boolean backright, boolean backleft) {
             if(frontright) {

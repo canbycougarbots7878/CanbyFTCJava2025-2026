@@ -3,29 +3,32 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.hardware.sparkfun.SparkFunOTOS;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.vision.VisionPortal;
-import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.vision.apriltag.AprilTagLibrary;
+import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
+import org.firstinspires.ftc.vision.apriltag.AprilTagGameDatabase;
 
 import java.util.List;
 
-@Autonomous(name = "AprilTag Auto (OTOS Fusion)", group = "Movement")
+@Autonomous(name = "AprilTag Movement", group = "Movement")
 public class AprilTagMovement extends LinearOpMode {
-    private AprilTagProcessor aprilTag;
-    private VisionPortal visionPortal;
     private SparkFunOTOS myOtos;
-    private MovementLib.DriveWheels wheels;
+    private VisionPortal visionPortal;
+    private AprilTagProcessor aprilTag;
+
+    // Camera offset relative to OTOS center
+    private static final double CAMERA_OFFSET_X = 0.18; // forward, meters
+    private static final double CAMERA_OFFSET_Y = 0.03; // left, meters
+
+    // AprilTag field position (known)
+    private static final double APRILTAG_FIELD_X = 1.8288; // 6 ft on +X axis
+    private static final double APRILTAG_FIELD_Y = 0.0;
 
     @Override
-    public void runOpMode() {
-        // --- Setup drive wheels ---
-        wheels = new MovementLib.DriveWheels(hardwareMap);
-
+    public void runOpMode() throws InterruptedException {
         // --- Setup OTOS ---
         myOtos = hardwareMap.get(SparkFunOTOS.class, "sensor_otos");
         myOtos.setLinearUnit(DistanceUnit.METER);
@@ -34,16 +37,9 @@ public class AprilTagMovement extends LinearOpMode {
         myOtos.resetTracking();
         myOtos.setPosition(new SparkFunOTOS.Pose2D(0, 0, 0));
 
-        // Build a custom tag library (example tags 1 and 2, adjust IDs & sizes as needed)
-        AprilTagLibrary tagLib = new AprilTagLibrary.Builder()
-                .addTag(1, "Tag1", 16.5, DistanceUnit.CM)  // Tag ID 1, size 16.5 cm
-                .addTag(2, "Tag2", 16.5, DistanceUnit.CM)  // Tag ID 2, size 16.5 cm
-                // add more tags as needed
-                .build();
-
-        // Initialize AprilTag processor using your library
+        // --- Setup AprilTag detection ---
         aprilTag = new AprilTagProcessor.Builder()
-                .setTagLibrary(tagLib)
+                .setTagLibrary(AprilTagGameDatabase.getCenterStageTagLibrary())
                 .build();
 
         visionPortal = new VisionPortal.Builder()
@@ -51,84 +47,57 @@ public class AprilTagMovement extends LinearOpMode {
                 .addProcessor(aprilTag)
                 .build();
 
-        telemetry.addLine("Init complete. Press start to begin.");
+        telemetry.addLine("Init complete. Press start to begin tracking...");
         telemetry.update();
         waitForStart();
 
-        // --- Step 1: Look for a tag and set target ---
-        double targetX = 0, targetY = 0;
-        boolean targetSet = false;
+        while (opModeIsActive()) {
+            SparkFunOTOS.Pose2D pos = myOtos.getPosition();
+            double robotFieldX = Double.NaN;
+            double robotFieldY = Double.NaN;
+            boolean tagSeen = false;
 
-        while (opModeIsActive() && !targetSet) {
             List<AprilTagDetection> detections = aprilTag.getDetections();
 
             if (!detections.isEmpty()) {
-                // Loop through all detected tags to find one with a valid pose
                 for (AprilTagDetection tag : detections) {
                     if (tag.ftcPose != null) {
-                        // Get current robot pose from OTOS
-                        SparkFunOTOS.Pose2D pos = myOtos.getPosition();
+                        tagSeen = true;
+
+                        // Convert AprilTag pose from inches to meters
+                        double tagX_m = tag.ftcPose.x * 0.0254;
+                        double tagZ_m = tag.ftcPose.z * 0.0254;
+
+                        // Apply camera offset
+                        double correctedX_m = tagZ_m + CAMERA_OFFSET_X;
+                        double correctedY_m = tagX_m + CAMERA_OFFSET_Y;
+
+                        // Rotate into field coordinates
                         double angleRad = Math.toRadians(pos.h);
+                        double fieldOffsetX = correctedX_m * Math.cos(angleRad) - correctedY_m * Math.sin(angleRad);
+                        double fieldOffsetY = correctedX_m * Math.sin(angleRad) + correctedY_m * Math.cos(angleRad);
 
-                        // Transform tag pose to field coordinates
-                        double rotatedX = tag.ftcPose.z * Math.cos(angleRad) - tag.ftcPose.x * Math.sin(angleRad);
-                        double rotatedY = tag.ftcPose.z * Math.sin(angleRad) + tag.ftcPose.x * Math.cos(angleRad);
+                        // Compute robot position relative to field center
+                        robotFieldX = APRILTAG_FIELD_X - fieldOffsetX;
+                        robotFieldY = APRILTAG_FIELD_Y - fieldOffsetY;
 
-                        targetX = pos.x + rotatedX;
-                        targetY = pos.y + rotatedY;
-
-                        telemetry.addData("Target set from tag %d", tag.id);
-                        telemetry.addData("Target Field Pos", "X=%.2f, Y=%.2f", targetX, targetY);
-                        telemetry.update();
-
-                        targetSet = true; // we have a valid target
-                        break; // exit for loop once a valid pose is found
-                    } else {
-                        telemetry.addData("Tag %d detected but pose is null", tag.id);
-                        telemetry.update();
+                        break; // Use first valid tag
                     }
                 }
-            } else {
-                telemetry.addLine("Looking for AprilTag...");
-                telemetry.update();
-            }
-        }
-
-// --- Step 2: Drive to the target using OTOS ---
-        double kP = 0.6;        // proportional gain
-        double tolerance = 0.15; // meters
-        double maxSpeed = 0.4;
-
-        while (opModeIsActive()) {
-            SparkFunOTOS.Pose2D pos = myOtos.getPosition();
-
-            double errorX = targetX - pos.x;
-            double errorY = targetY - pos.y;
-
-            double distance = Math.hypot(errorX, errorY);
-
-            telemetry.addData("Current Pos", "X=%.2f, Y=%.2f", pos.x, pos.y);
-            telemetry.addData("Target Pos", "X=%.2f, Y=%.2f", targetX, targetY);
-            telemetry.addData("Errors", "dX=%.2f, dY=%.2f, Dist=%.2f", errorX, errorY, distance);
-
-            if (distance > tolerance) {
-                // proportional speeds
-                double forward = Math.max(-maxSpeed, Math.min(maxSpeed, errorX * kP));
-                double right   = Math.max(-maxSpeed, Math.min(maxSpeed, errorY * kP));
-                double rotate  = 0; // optional: add heading correction here
-
-                wheels.Omni_Move(forward, right, rotate, 1.0);
-            } else {
-                wheels.Stop_Wheels();
-                telemetry.addLine("Reached AprilTag target!");
-                telemetry.update();
-                break;
             }
 
+            // --- Telemetry ---
+            telemetry.addData("Heading (°)", pos.h);
+            if (tagSeen) {
+                telemetry.addData("Robot Field Pos (m)", "X=%.2f, Y=%.2f", robotFieldX, robotFieldY);
+            } else {
+                telemetry.addLine("AprilTag not detected.");
+            }
             telemetry.update();
+
+            sleep(50); // Small delay to reduce CPU load
         }
 
-        wheels.Stop_Wheels();
         visionPortal.close();
     }
 }
