@@ -6,6 +6,9 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+
 public class MovementLib {
     public static class DriveWheels {
         public DcMotor Front_Right;
@@ -22,14 +25,21 @@ public class MovementLib {
             this.Back_Right = hardwareMap.get(DcMotor.class, "backright");
             this.Back_Left = hardwareMap.get(DcMotor.class, "backleft");
         }
-        public DriveWheels(HardwareMap hardwareMap, SparkFunOTOS myOtos) {
+        public DriveWheels(HardwareMap hardwareMap, boolean findOtos) {
             this.Front_Right = hardwareMap.get(DcMotor.class, "frontright");
             this.Front_Left = hardwareMap.get(DcMotor.class, "frontleft");
             this.Back_Right = hardwareMap.get(DcMotor.class, "backright");
             this.Back_Left = hardwareMap.get(DcMotor.class, "backleft");
-            this.otos = myOtos;
 
-            this.OTOS_ENABLED = true;
+            if(findOtos) {
+                this.otos = hardwareMap.get(SparkFunOTOS.class, "sensor_otos");
+                this.otos.setLinearUnit(DistanceUnit.METER);
+                this.otos.setAngularUnit(AngleUnit.DEGREES);
+                this.otos.calibrateImu();
+                this.otos.resetTracking();
+            }
+
+            this.OTOS_ENABLED = findOtos;
         }
         public DriveWheels(DcMotor Front_Right, DcMotor Front_Left, DcMotor Back_Right, DcMotor Back_Left) {
             this.Front_Right = Front_Right;
