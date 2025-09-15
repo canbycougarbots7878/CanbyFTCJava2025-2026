@@ -25,11 +25,11 @@ public class AprilTagMovement extends LinearOpMode {
     private static final double CAMERA_OFFSET_Y = 0.03; // left, meters
 
     // AprilTag field position (known)
-    private static final double APRILTAG_FIELD_X = 1.8288; // 6 ft on +X axis
+    private static final double APRILTAG_FIELD_X = 6; // +X axis
     private static final double APRILTAG_FIELD_Y = 0.0;
 
-    // Tag front faces the center of the field (0° in this setup)
-    private static final double TAG_FRONT_HEADING = 0.0;
+    // Tag front faces the center of the field (180° in this setup)
+    private static final double TAG_FRONT_HEADING = 180;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -60,8 +60,7 @@ public class AprilTagMovement extends LinearOpMode {
             SparkFunOTOS.Pose2D pos = myOtos.getPosition();
             double robotFieldX = Double.NaN;
             double robotFieldY = Double.NaN;
-            double headingRelativeTagFront = Double.NaN;
-            double robotForwardFieldAngle = Double.NaN;
+            double robotFieldH = Double.NaN;
             boolean tagSeen = false;
 
             List<AprilTagDetection> detections = aprilTag.getDetections();
@@ -71,34 +70,31 @@ public class AprilTagMovement extends LinearOpMode {
                     if (tag.ftcPose != null) {
                         tagSeen = true;
 
-                        // Convert tag pose from inches to meters
-                        double tagX_m = tag.ftcPose.x * 0.0254;
-                        double tagZ_m = tag.ftcPose.z * 0.0254;
+                        double RobotX = pos.x;
+                        double RobotY = pos.y;
+                        double RobotH = pos.h;
 
-                        // Apply camera offset
-                        double correctedX_m = tagZ_m + CAMERA_OFFSET_X;
-                        double correctedY_m = tagX_m + CAMERA_OFFSET_Y;
+                        double RobotCameraPositionY = RobotX + CAMERA_OFFSET_X;
+                        double RobotCameraPositionX = RobotY + CAMERA_OFFSET_Y;
+                        double RobotCameraPositionH = RobotH;
 
-                        // Rotate into field coordinates
-                        double angleRad = Math.toRadians(pos.h);
-                        double fieldOffsetX = correctedX_m * Math.cos(angleRad) - correctedY_m * Math.sin(angleRad);
-                        double fieldOffsetY = correctedX_m * Math.sin(angleRad) + correctedY_m * Math.cos(angleRad);
+                        double TagPositionX = tag.ftcPose.x;
+                        double TagPositionY = tag.ftcPose.y;
+                        double TagPositionH = tag.ftcPose.yaw;
 
-                        // Compute robot field position
-                        robotFieldX = APRILTAG_FIELD_X - fieldOffsetX;
-                        robotFieldY = APRILTAG_FIELD_Y - fieldOffsetY;
+                        double TagPositionXMeter = TagPositionX * 0.0254;
+                        double TagPositionYMeter = TagPositionY * 0.0254;
 
-                        // --- Heading relative to tag front ---
-                        headingRelativeTagFront = pos.h - TAG_FRONT_HEADING;
-                        headingRelativeTagFront = ((headingRelativeTagFront + 180) % 360) - 180;
+                        double Robot_TagPositionX = RobotCameraPositionX - TagPositionXMeter;
+                        double Robot_TagPositionY = RobotCameraPositionY - TagPositionYMeter;
+                        double Robot_TagPositionH = RobotCameraPositionH - TagPositionH;
 
-                        // --- Robot forward vector in field coordinates ---
-                        double dx = robotFieldX - APRILTAG_FIELD_X;
-                        double dy = robotFieldY - APRILTAG_FIELD_Y;
-                        double angleTagToRobot = Math.toDegrees(Math.atan2(dy, dx));
+                        double AprilTagFieldXMeter = APRILTAG_FIELD_X * 0.3048;
+                        double AprilTagFieldYMeter = APRILTAG_FIELD_Y * 0.3048;
 
-                        robotForwardFieldAngle = angleTagToRobot + pos.h;
-                        robotForwardFieldAngle = ((robotForwardFieldAngle + 180) % 360) - 180;
+                        robotFieldX = Robot_TagPositionX + AprilTagFieldXMeter;
+                        robotFieldY = Robot_TagPositionY + AprilTagFieldYMeter;
+                        robotFieldH = Robot_TagPositionH + TAG_FRONT_HEADING;
 
                         break; // use first valid tag
                     }
@@ -106,11 +102,10 @@ public class AprilTagMovement extends LinearOpMode {
             }
 
             // --- Telemetry ---
-            telemetry.addData("Robot Field Pos (m)", "X=%.2f, Y=%.2f", robotFieldX, robotFieldY);
-            telemetry.addData("Heading (° from +X)", pos.h);
+
             if (tagSeen) {
-                telemetry.addData("Heading Relative to Tag Front (°)", "%.1f", headingRelativeTagFront);
-                telemetry.addData("Robot Forward Vector (° Field)", "%.1f", robotForwardFieldAngle);
+                telemetry.addData("Robot Field Pos (m)", "X=%.2f, Y=%.2f", robotFieldX, robotFieldY);
+                telemetry.addData("Heading (° from +X)", robotFieldH);
             } else {
                 telemetry.addLine("AprilTag not detected.");
             }
