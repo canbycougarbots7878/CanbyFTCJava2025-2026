@@ -25,7 +25,8 @@ public class Basic_Drive extends LinearOpMode {
         while(opModeIsActive()) {
             double forward = gamepad1.left_stick_y;
             double strafe = - gamepad1.left_stick_x;
-            Wheels.Omni_Move(forward, strafe, gamepad1.right_stick_x, 0.5);
+            double speed = (gamepad1.right_bumper ? 1.0 : 0.5);
+            Wheels.Omni_Move(forward, strafe, gamepad1.right_stick_x, speed);
         }
     }
 }
