@@ -11,7 +11,11 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 public class OTOS_Reader extends LinearOpMode {
     SparkFunOTOS myOtos;
     MovementLib.DriveWheels wheels;
+
+    public SparkFunOTOS.Pose2D target = new SparkFunOTOS.Pose2D(0,0,0);
     public void runOpMode() {
+        wheels = new MovementLib.DriveWheels(hardwareMap, true); // Init DriveWheels with Otos enabled
+        wheels.Reverse_Left(); // Make all motors spin forward
 
         myOtos = hardwareMap.get(SparkFunOTOS.class, "sensor_otos");
         myOtos.setLinearUnit(DistanceUnit.METER);
@@ -31,6 +35,8 @@ public class OTOS_Reader extends LinearOpMode {
             telemetry.addData("X coordinate", pos.x);
             telemetry.addData("Y coordinate", pos.y);
             telemetry.addData("Heading angle", pos.h);
+
+            wheels.Omni_Move_To_Target(target);
 
             // Update the telemetry on the driver station
             telemetry.update();
