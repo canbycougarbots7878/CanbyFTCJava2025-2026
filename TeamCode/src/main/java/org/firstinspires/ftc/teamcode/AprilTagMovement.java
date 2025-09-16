@@ -28,8 +28,8 @@ public class AprilTagMovement extends LinearOpMode {
     private static final double APRILTAG_FIELD_X = 6; // +X axis
     private static final double APRILTAG_FIELD_Y = 0.0;
 
-    // Tag front faces the center of the field (180° in this setup)
-    private static final double TAG_FRONT_HEADING = 180;
+    // Tag front faces the center of the field (0° in this setup)
+    private static final double TAG_FRONT_HEADING = 0;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -54,13 +54,15 @@ public class AprilTagMovement extends LinearOpMode {
 
         telemetry.addLine("Init complete. Press start to begin tracking...");
         telemetry.update();
+
+        double robotFieldX = Double.NaN;
+        double robotFieldY = Double.NaN;
+        double robotFieldH = Double.NaN;
+
         waitForStart();
 
         while (opModeIsActive()) {
             SparkFunOTOS.Pose2D pos = myOtos.getPosition();
-            double robotFieldX = Double.NaN;
-            double robotFieldY = Double.NaN;
-            double robotFieldH = Double.NaN;
             boolean tagSeen = false;
 
             List<AprilTagDetection> detections = aprilTag.getDetections();
@@ -92,8 +94,8 @@ public class AprilTagMovement extends LinearOpMode {
                         double AprilTagFieldXMeter = APRILTAG_FIELD_X * 0.3048;
                         double AprilTagFieldYMeter = APRILTAG_FIELD_Y * 0.3048;
 
-                        robotFieldX = Robot_TagPositionX + AprilTagFieldXMeter;
-                        robotFieldY = Robot_TagPositionY + AprilTagFieldYMeter;
+                        robotFieldY = Robot_TagPositionX + AprilTagFieldYMeter;
+                        robotFieldX = Robot_TagPositionY + AprilTagFieldXMeter;
                         robotFieldH = Robot_TagPositionH + TAG_FRONT_HEADING;
 
                         break; // use first valid tag
@@ -102,10 +104,10 @@ public class AprilTagMovement extends LinearOpMode {
             }
 
             // --- Telemetry ---
-
+            telemetry.addData("Robot Field Pos (m)", "X=%.2f, Y=%.2f", robotFieldX, robotFieldY);
+            telemetry.addData("Heading (° from +X)", robotFieldH);
             if (tagSeen) {
-                telemetry.addData("Robot Field Pos (m)", "X=%.2f, Y=%.2f", robotFieldX, robotFieldY);
-                telemetry.addData("Heading (° from +X)", robotFieldH);
+                telemetry.addLine("AprilTag detected.");
             } else {
                 telemetry.addLine("AprilTag not detected.");
             }
