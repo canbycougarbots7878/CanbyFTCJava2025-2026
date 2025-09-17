@@ -124,6 +124,14 @@ public class MovementLib {
             double dh = (target.h - pose.h) / 180.0;
             Omni_Move(dx, dy, dh);
         }
+        public double Distance_To(SparkFunOTOS.Pose2D target) {
+            SparkFunOTOS.Pose2D pos = otos.getPosition();
+            double dx = 2 * (target.x - pos.x);
+            double dy = 2 * (target.y - pos.y);
+            double dh = (target.h - pos.h) / 180.0;
+            double distance = Math.sqrt(dx*dx+dy*dy+dh*dh);
+            return distance;
+        }
     }
 
 
