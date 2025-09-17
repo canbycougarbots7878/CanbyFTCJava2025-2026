@@ -20,16 +20,16 @@ public class AprilTagMovement extends LinearOpMode {
     private VisionPortal visionPortal;
     private AprilTagProcessor aprilTag;
 
-    // Camera offset relative to OTOS center
-    private static final double CAMERA_OFFSET_X = 0.18; // forward, meters
-    private static final double CAMERA_OFFSET_Y = 0.03; // left, meters
+    // Camera offset relative to OTOS origin, in robot-centric meters
+    private static final double CAMERA_OFFSET_X = 0.18; // forward
+    private static final double CAMERA_OFFSET_Y = 0.03; // left
 
-    // AprilTag field position (known)
-    private static final double APRILTAG_FIELD_X = 6; // +X axis
-    private static final double APRILTAG_FIELD_Y = 0.0;
+    // AprilTag known field position
+    private static final double APRILTAG_FIELD_X = 6;   // ft
+    private static final double APRILTAG_FIELD_Y = 0.0; // ft
 
-    // Tag front faces the center of the field (180° in this setup)
-    private static final double TAG_FRONT_HEADING = 180;
+    // Tag orientation (front faces field center)
+    private static final double TAG_FRONT_HEADING = 0;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -54,61 +54,60 @@ public class AprilTagMovement extends LinearOpMode {
 
         telemetry.addLine("Init complete. Press start to begin tracking...");
         telemetry.update();
+
         waitForStart();
+
+        boolean tagFixed = false;
 
         while (opModeIsActive()) {
             SparkFunOTOS.Pose2D pos = myOtos.getPosition();
-            double robotFieldX = Double.NaN;
-            double robotFieldY = Double.NaN;
-            double robotFieldH = Double.NaN;
-            boolean tagSeen = false;
+
+            double robotFieldX = pos.x;
+            double robotFieldY = pos.y;
+            double robotFieldH = pos.h;
 
             List<AprilTagDetection> detections = aprilTag.getDetections();
+            boolean tagSeen = false;
 
-            if (!detections.isEmpty()) {
+            if (!tagFixed && !detections.isEmpty()) {
                 for (AprilTagDetection tag : detections) {
                     if (tag.ftcPose != null) {
                         tagSeen = true;
 
-                        double RobotX = pos.x;
-                        double RobotY = pos.y;
-                        double RobotH = pos.h;
+                        // --- Compute corrected pose as before ---
+                        double robotHrad = Math.toRadians(pos.h);
+                        double camX = pos.x + (CAMERA_OFFSET_X * Math.cos(robotHrad)
+                                - CAMERA_OFFSET_Y * Math.sin(robotHrad));
+                        double camY = pos.y + (CAMERA_OFFSET_X * Math.sin(robotHrad)
+                                + CAMERA_OFFSET_Y * Math.cos(robotHrad));
 
-                        double RobotCameraPositionY = RobotX + CAMERA_OFFSET_X;
-                        double RobotCameraPositionX = RobotY + CAMERA_OFFSET_Y;
-                        double RobotCameraPositionH = RobotH;
+                        double tagX = tag.ftcPose.x * 0.0254;
+                        double tagY = tag.ftcPose.y * 0.0254;
+                        double relX = camX - tagX;
+                        double relY = camY - tagY;
+                        double relH = pos.h - tag.ftcPose.yaw;
 
-                        double TagPositionX = tag.ftcPose.x;
-                        double TagPositionY = tag.ftcPose.y;
-                        double TagPositionH = tag.ftcPose.yaw;
+                        double fieldTagX = APRILTAG_FIELD_X * 0.3048;
+                        double fieldTagY = APRILTAG_FIELD_Y * 0.3048;
 
-                        double TagPositionXMeter = TagPositionX * 0.0254;
-                        double TagPositionYMeter = TagPositionY * 0.0254;
+                        robotFieldX = fieldTagX + relX;
+                        robotFieldY = fieldTagY + relY;
+                        robotFieldH = TAG_FRONT_HEADING + relH;
 
-                        double Robot_TagPositionX = RobotCameraPositionX - TagPositionXMeter;
-                        double Robot_TagPositionY = RobotCameraPositionY - TagPositionYMeter;
-                        double Robot_TagPositionH = RobotCameraPositionH - TagPositionH;
+                        // --- Apply fix ONCE ---
+                        myOtos.setPosition(new SparkFunOTOS.Pose2D(robotFieldX, robotFieldY, robotFieldH));
+                        tagFixed = true;
 
-                        double AprilTagFieldXMeter = APRILTAG_FIELD_X * 0.3048;
-                        double AprilTagFieldYMeter = APRILTAG_FIELD_Y * 0.3048;
-
-                        robotFieldX = Robot_TagPositionX + AprilTagFieldXMeter;
-                        robotFieldY = Robot_TagPositionY + AprilTagFieldYMeter;
-                        robotFieldH = Robot_TagPositionH + TAG_FRONT_HEADING;
-
-                        break; // use first valid tag
+                        break;
                     }
                 }
             }
 
             // --- Telemetry ---
-
-            if (tagSeen) {
-                telemetry.addData("Robot Field Pos (m)", "X=%.2f, Y=%.2f", robotFieldX, robotFieldY);
-                telemetry.addData("Heading (° from +X)", robotFieldH);
-            } else {
-                telemetry.addLine("AprilTag not detected.");
-            }
+            telemetry.addData("Robot Field Pos (m)", "X=%.2f, Y=%.2f", robotFieldX, robotFieldY);
+            telemetry.addData("Heading (° from +X)", robotFieldH);
+            if (tagSeen && !tagFixed) telemetry.addLine("AprilTag detected → Pose corrected.");
+            else telemetry.addLine("Odometry running...");
             telemetry.update();
 
             sleep(50);
