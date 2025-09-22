@@ -16,7 +16,7 @@ public class PRM_Drive extends LinearOpMode {
     DcMotor Back_Right = null;
     DcMotor Back_Left = null;
 
-    MovementLib.DriveWheels Wheels = null;
+    MovementLib.Robot robot = null;
 
 
     IMU imu;
@@ -26,8 +26,8 @@ public class PRM_Drive extends LinearOpMode {
         Back_Right = hardwareMap.get(DcMotor.class, "backright");
         Back_Left = hardwareMap.get(DcMotor.class, "backleft");
 
-        Wheels = new MovementLib.DriveWheels(Front_Right, Front_Left, Back_Right, Back_Left); // Initialize Wheels handler
-        Wheels.Reverse_Left(); // Make all motors spin forward
+        robot = new MovementLib.Robot(Front_Right, Front_Left, Back_Right, Back_Left); // Initialize Wheels handler
+        robot.Reverse_Left(); // Make all motors spin forward
         imu = hardwareMap.get(IMU.class, "imu");
 
         waitForStart();
@@ -44,7 +44,7 @@ public class PRM_Drive extends LinearOpMode {
             double forward = localForward * Math.cos(yaw) - localRight * Math.sin(yaw);
             double right = localForward * Math.sin(yaw) + localRight * Math.cos(yaw);
 
-            Wheels.Omni_Move(forward, right, gamepad1.right_stick_x, (gamepad1.right_bumper ? 1.0 : 0.5));
+            robot.Omni_Move(forward, right, gamepad1.right_stick_x, (gamepad1.right_bumper ? 1.0 : 0.5));
 
             if(gamepad1.start) imu.resetYaw();
         }
