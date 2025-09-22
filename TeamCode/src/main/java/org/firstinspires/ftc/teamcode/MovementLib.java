@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
+@SuppressWarnings("unused")
 public class MovementLib {
     public static class Vector2 {
         double x;
@@ -84,6 +85,7 @@ public class MovementLib {
         }
         public void Omni_Move(Vector2 vec2, double speed) {
             Omni_Move(vec2.y,vec2.x,0.0,speed);
+
         } public void Omni_Move(Vector2 vec2) { Omni_Move(vec2, 1.0); }
 
         public void Omni_Move(double Forward, double Right, double RotateCC) {
@@ -128,11 +130,7 @@ public class MovementLib {
             double dx = 2 * (target.x - pos.x);
             double dy = 2 * (target.y - pos.y);
             double dh = (target.h - pos.h) / 180.0;
-            double distance = Math.sqrt(dx*dx+dy*dy+dh*dh);
-            return distance;
+            return Math.sqrt(dx*dx+dy*dy+dh*dh);
         }
     }
-
-
-
 }
