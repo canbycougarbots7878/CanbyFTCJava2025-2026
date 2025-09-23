@@ -46,7 +46,7 @@ public class AprilTagMovement extends LinearOpMode {
 
         // --- Setup AprilTag detection ---
         aprilTag = new AprilTagProcessor.Builder()
-                .setTagLibrary(AprilTagGameDatabase.getIntoTheDeepTagLibrary())
+                .setTagLibrary(AprilTagGameDatabase.getCenterStageTagLibrary())
                 .build();
 
         visionPortal = new VisionPortal.Builder()
