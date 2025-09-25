@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.hardware.sparkfun.SparkFunOTOS;
+import com.qualcomm.hardware.sparkfun.SparkFunOTOS;  
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
@@ -12,32 +12,27 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import org.firstinspires.ftc.vision.apriltag.AprilTagGameDatabase;
 
 import java.util.List;
-
 //this is a test
 
 @Autonomous(name = "AprilTag Movement", group = "Movement")
 public class AprilTagMovement extends LinearOpMode {
-
-    private SparkFunOTOS myOtos;
-    private VisionPortal visionPortal;
-    private AprilTagProcessor aprilTag;
 
     // Camera offset relative to OTOS origin, in robot-centric meters
     private static final double CAMERA_OFFSET_X = 0.18; // forward
     private static final double CAMERA_OFFSET_Y = 0.03; // left
 
     // AprilTag known field position
-    private static final double APRILTAG_FIELD_X = 6;   // ft
-    private static final double APRILTAG_FIELD_Y = 0.0; // ft
+    private static final double APRILTAG_FIELD_X = (3*0.3048)-((35*Math.sin(Math.acos((Math.pow(58.7,2)-Math.pow(70,2)-Math.pow(59,2))/(-2*70*59))))/100);
+    private static final double APRILTAG_FIELD_Y = (3*0.3048)-((35*Math.cos(Math.acos((Math.pow(58.7,2)-Math.pow(70,2)-Math.pow(59,2))/(-2*70*59))))/100);
 
     // Tag orientation (front faces field center)
     private static final double TAG_FRONT_HEADING = 0;
 
     @Override
-    public void runOpMode() throws InterruptedException {
+    public void runOpMode() {
 
         // --- Setup OTOS ---
-        myOtos = hardwareMap.get(SparkFunOTOS.class, "sensor_otos");
+        SparkFunOTOS myOtos = hardwareMap.get(SparkFunOTOS.class, "sensor_otos");
         myOtos.setLinearUnit(DistanceUnit.METER);
         myOtos.setAngularUnit(AngleUnit.DEGREES);
         myOtos.calibrateImu();
@@ -45,11 +40,11 @@ public class AprilTagMovement extends LinearOpMode {
         myOtos.setPosition(new SparkFunOTOS.Pose2D(0, 0, 0));
 
         // --- Setup AprilTag detection ---
-        aprilTag = new AprilTagProcessor.Builder()
+        AprilTagProcessor aprilTag = new AprilTagProcessor.Builder()
                 .setTagLibrary(AprilTagGameDatabase.getCenterStageTagLibrary())
                 .build();
 
-        visionPortal = new VisionPortal.Builder()
+        VisionPortal visionPortal = new VisionPortal.Builder()
                 .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
                 .addProcessor(aprilTag)
                 .build();
@@ -89,11 +84,8 @@ public class AprilTagMovement extends LinearOpMode {
                         double relY = camY - tagY;
                         double relH = pos.h - tag.ftcPose.yaw;
 
-                        double fieldTagX = APRILTAG_FIELD_X * 0.3048;
-                        double fieldTagY = APRILTAG_FIELD_Y * 0.3048;
-
-                        robotFieldX = fieldTagX + relX;
-                        robotFieldY = fieldTagY + relY;
+                        robotFieldX = APRILTAG_FIELD_X + relX;
+                        robotFieldY = APRILTAG_FIELD_Y + relY;
                         robotFieldH = TAG_FRONT_HEADING + relH;
 
                         // --- Apply fix ONCE ---
